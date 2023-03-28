@@ -1,12 +1,14 @@
-import { gql } from "@apollo/client";
+import { gql } from "../__generated__";
 import Head from "next/head";
 import Link from "next/link";
 import Header from "../components/header";
 import EntryHeader from "../components/entry-header";
 import Footer from "../components/footer";
 import style from "../styles/front-page.module.css";
+import { GetHomePageQuery } from "../__generated__/graphql";
+import { FaustTemplate } from "@faustwp/core";
 
-export default function Component(props) {
+const Component: FaustTemplate<GetHomePageQuery> = (props) => {
   const { title: siteTitle, description: siteDescription } =
     props.data.generalSettings;
   const menuItems = props.data.primaryMenuItems.nodes;
@@ -78,11 +80,30 @@ export default function Component(props) {
       <Footer />
     </>
   );
-}
+};
 
-Component.query = gql`
-  ${Header.fragments.entry}
+Component.query = gql(`
   query GetHomePage {
-    ...HeaderFragment
+    generalSettings {
+      title
+      description
+    }
+    primaryMenuItems: menuItems(where: { location: PRIMARY }) {
+      nodes {
+        id
+        uri
+        path
+        label
+        parentId
+        cssClasses
+        menu {
+          node {
+            name
+          }
+        }
+      }
+    }
   }
-`;
+`);
+
+export default Component;

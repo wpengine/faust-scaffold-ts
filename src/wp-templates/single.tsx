@@ -1,18 +1,21 @@
-import { gql } from "@apollo/client";
+import { gql } from "../__generated__";
 import Head from "next/head";
 import EntryHeader from "../components/entry-header";
 import Footer from "../components/footer";
 import Header from "../components/header";
-export default function Component(props) {
+import { GetPostQuery } from "../__generated__/graphql";
+import { FaustTemplate } from "@faustwp/core";
+
+const Component: FaustTemplate<GetPostQuery> = (props) => {
   // Loading state for previews
   if (props.loading) {
     return <>Loading...</>;
   }
 
-  const { title: siteTitle, description: siteDescription } =
-    props.data.generalSettings;
-  const menuItems = props.data.primaryMenuItems.nodes;
-  const { title, content, date, author } = props.data.post;
+  const { post, generalSettings, primaryMenuItems } = props.data;
+  const { title: siteTitle, description: siteDescription } = generalSettings;
+  const { nodes: menuItems } = primaryMenuItems;
+  const { title, content, date, author } = post;
 
   return (
     <>
@@ -34,7 +37,7 @@ export default function Component(props) {
       <Footer />
     </>
   );
-}
+};
 
 Component.variables = ({ databaseId }, ctx) => {
   return {
@@ -43,8 +46,7 @@ Component.variables = ({ databaseId }, ctx) => {
   };
 };
 
-Component.query = gql`
-  ${Header.fragments.entry}
+Component.query = gql(`
   query GetPost($databaseId: ID!, $asPreview: Boolean = false) {
     post(id: $databaseId, idType: DATABASE_ID, asPreview: $asPreview) {
       title
@@ -56,6 +58,26 @@ Component.query = gql`
         }
       }
     }
-    ...HeaderFragment
+    generalSettings {
+      title
+      description
+    }
+    primaryMenuItems: menuItems(where: { location: PRIMARY }) {
+      nodes {
+        id
+        uri
+        path
+        label
+        parentId
+        cssClasses
+        menu {
+          node {
+            name
+          }
+        }
+      }
+    }
   }
-`;
+`);
+
+export default Component;

@@ -1,4 +1,4 @@
-import { gql } from "@apollo/client";
+import { gql } from "../__generated__";
 import Link from "next/link";
 import style from "./header.module.css";
 
@@ -26,27 +26,25 @@ export default function Header({ siteTitle, siteDescription, menuItems }) {
 }
 
 Header.fragments = {
-  entry: gql`
-    fragment HeaderFragment on RootQuery {
-      generalSettings {
-        title
-        description
-      }
-      primaryMenuItems: menuItems(where: { location: PRIMARY }) {
-        nodes {
-          id
-          uri
-          path
-          label
-          parentId
-          cssClasses
-          menu {
-            node {
-              name
-            }
-          }
+  generalSettingsFragment: gql(`
+    fragment HeaderGeneralSettingsFragment on GeneralSettings {
+      title
+      description
+    }
+  `),
+  menuItemFragment: gql(`
+    fragment PrimaryMenuItemFragment on MenuItem {
+      id
+      uri
+      path
+      label
+      parentId
+      cssClasses
+      menu {
+        node {
+          name
         }
       }
     }
-  `,
+  `),
 };
