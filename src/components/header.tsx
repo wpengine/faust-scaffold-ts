@@ -1,8 +1,22 @@
 import { gql } from "../__generated__";
 import Link from "next/link";
 import style from "./header.module.css";
+import {
+  HeaderGeneralSettingsFragmentFragment,
+  PrimaryMenuItemFragmentFragment,
+} from "../__generated__/graphql";
 
-export default function Header({ siteTitle, siteDescription, menuItems }) {
+type HeaderProps = {
+  siteTitle: HeaderGeneralSettingsFragmentFragment["title"];
+  siteDescription: HeaderGeneralSettingsFragmentFragment["description"];
+  menuItems: PrimaryMenuItemFragmentFragment[];
+};
+
+export default function Header({
+  siteTitle,
+  siteDescription,
+  menuItems,
+}: HeaderProps) {
   return (
     <header className={style.header}>
       <div className="container">

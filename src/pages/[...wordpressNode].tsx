@@ -1,17 +1,18 @@
 import { getWordPressProps, WordPressTemplate } from "@faustwp/core";
-import { GetStaticPathsContext } from "next";
+import { GetStaticPaths, GetStaticProps } from "next";
+import { WordPressTemplateProps } from "../types";
 
-export default function Page(props) {
+export default function Page(props: WordPressTemplateProps) {
   return <WordPressTemplate {...props} />;
 }
 
-export function getStaticProps(ctx: GetStaticPathsContext) {
+export const getStaticProps: GetStaticProps = (ctx) => {
   return getWordPressProps({ ctx });
-}
+};
 
-export async function getStaticPaths() {
+export const getStaticPaths: GetStaticPaths = () => {
   return {
     paths: [],
     fallback: "blocking",
   };
-}
+};
