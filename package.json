@@ -10,8 +10,8 @@
   },
   "dependencies": {
     "@apollo/client": "^3.7.10",
-    "@faustwp/cli": "0.2.7",
-    "@faustwp/core": "0.2.7",
+    "@faustwp/cli": "^0.2.12",
+    "@faustwp/core": "^0.2.11",
     "graphql": "^16.6.0",
     "next": "^13.2.4",
     "react": "^18.2.0",
@@ -20,9 +20,9 @@
   "devDependencies": {
     "@graphql-codegen/cli": "^3.2.2",
     "@graphql-codegen/client-preset": "^2.1.1",
-    "@types/node": "18.15.10",
-    "@types/react": "18.0.29",
-    "concurrently": "^7.6.0",
+    "@types/node": "^18.16.1",
+    "@types/react": "^18.2.0",
+    "concurrently": "^8.0.1",
     "typescript": "^5.0.2"
   }
 }
