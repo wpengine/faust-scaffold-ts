@@ -10,7 +10,7 @@ Run `npm run build`
 Run `npm run generate`
 Run `npm run start`
 
-While making changes, run `npm run dev` in another terminal window.
+While making changes to the scaffold, run `npm run dev` in another terminal window.
 
 ## For more information
 
