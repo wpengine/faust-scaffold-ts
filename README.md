@@ -5,7 +5,7 @@ This repository contains a starter scaffolding to get you up and running quickly
 # Installation
 
 Run `npm i`
-Change the `.env.local.sample` file's name to `.env.local.` 
+Change the `.env.local.sample` file's name to `.env.local.`
 Run `npm run build`
 Run `npm run generate`
 Run `npm run start`
@@ -19,7 +19,6 @@ For more information on this Blueprint please check out the following sources:
 - [WP Engine's Atlas Platform](https://wpengine.com/atlas/)
 - [Faust.js](https://faustjs.org)
 - [WPGraphQL](https://www.wpgraphql.com)
-- [Atlas Content Modeler](https://wordpress.org/plugins/atlas-content-modeler/)
 - [WP Engine's Atlas developer community](https://developers.wpengine.com)
 
 ### Contributor License Agreement
