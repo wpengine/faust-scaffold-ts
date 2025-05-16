@@ -3,8 +3,26 @@ import Head from "next/head";
 import EntryHeader from "../components/entry-header";
 import Footer from "../components/footer";
 import Header from "../components/header";
+import { SITE_DATA_QUERY } from "../queries/SiteSettingsQuery";
+import { HEADER_MENU_QUERY } from "../queries/MenuQueries";
+import { useFaustQuery } from "@faustwp/core";
 import { GetPostQuery } from "../__generated__/graphql";
 import { FaustTemplate } from "@faustwp/core";
+
+const POST_QUERY = gql`
+  query GetPost($databaseId: ID!, $asPreview: Boolean = false) {
+    post(id: $databaseId, idType: DATABASE_ID, asPreview: $asPreview) {
+      title
+      content
+      date
+      author {
+        node {
+          name
+        }
+      }
+    }
+  }
+`;
 
 const Component: FaustTemplate<GetPostQuery> = (props) => {
   // Loading state for previews
@@ -12,10 +30,16 @@ const Component: FaustTemplate<GetPostQuery> = (props) => {
     return <>Loading...</>;
   }
 
-  const { post, generalSettings, primaryMenuItems } = props.data;
-  const { title: siteTitle, description: siteDescription } = generalSettings;
-  const { nodes: menuItems } = primaryMenuItems;
-  const { title, content, date, author } = post;
+  const contentQuery = useFaustQuery(POST_QUERY) || {};
+  const siteDataQuery = useFaustQuery(SITE_DATA_QUERY) || {};
+  const headerMenuDataQuery = useFaustQuery(HEADER_MENU_QUERY) || {};
+
+  const siteData = siteDataQuery?.generalSettings || {};
+  const menuItems = headerMenuDataQuery?.primaryMenuItems?.nodes || {
+    nodes: [],
+  };
+  const { title: siteTitle, description: siteDescription } = siteData;
+  const { title, content, date, author } = contentQuery?.post || {};
 
   return (
     <>
@@ -39,45 +63,20 @@ const Component: FaustTemplate<GetPostQuery> = (props) => {
   );
 };
 
-Component.variables = ({ databaseId }, ctx) => {
-  return {
-    databaseId,
-    asPreview: ctx?.asPreview,
-  };
-};
-
-Component.query = gql(`
-  query GetPost($databaseId: ID!, $asPreview: Boolean = false) {
-    post(id: $databaseId, idType: DATABASE_ID, asPreview: $asPreview) {
-      title
-      content
-      date
-      author {
-        node {
-          name
-        }
-      }
-    }
-    generalSettings {
-      title
-      description
-    }
-    primaryMenuItems: menuItems(where: { location: PRIMARY }) {
-      nodes {
-        id
-        uri
-        path
-        label
-        parentId
-        cssClasses
-        menu {
-          node {
-            name
-          }
-        }
-      }
-    }
-  }
-`);
+Component.queries = [
+  {
+    query: POST_QUERY,
+    variables: ({ databaseId }, ctx) => ({
+      databaseId,
+      asPreview: ctx?.asPreview,
+    }),
+  },
+  {
+    query: SITE_DATA_QUERY,
+  },
+  {
+    query: HEADER_MENU_QUERY,
+  },
+];
 
 export default Component;
