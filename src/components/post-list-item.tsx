@@ -1,8 +1,13 @@
 import Link from "next/link";
 import { FeaturedImage } from "./featured-image";
 import styles from "../styles/post-list-item.module.css";
+import { Post } from "../__generated__/graphql";
 
-export default function PostListItem({ post }) {
+interface PostListItemProps {
+  post: Partial<Post>;
+}
+
+export default function PostListItem({ post }: PostListItemProps) {
   const { title, excerpt, uri, date } = post;
 
   return (
@@ -21,7 +26,7 @@ export default function PostListItem({ post }) {
         </Link>
       </h2>
 
-      {post.author && post.author.node && (
+      {post.author?.node && (
         <div className={styles.authorRow}>
           <span>by {post.author.node.name}</span>
         </div>
