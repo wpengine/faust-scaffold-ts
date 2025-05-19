@@ -38,7 +38,8 @@ const Component: FaustTemplate<GetPostQuery> = (props) => {
 
   const contentQuery = useFaustQuery<GetPostQuery>(POST_QUERY) || {};
   const siteDataQuery = useFaustQuery<SiteDataQueryResponse>(SITE_DATA_QUERY);
-  const headerMenuDataQuery = useFaustQuery<HeaderMenuQueryResponse>(HEADER_MENU_QUERY);
+  const headerMenuDataQuery =
+    useFaustQuery<HeaderMenuQueryResponse>(HEADER_MENU_QUERY);
 
   const defaultSiteData: SiteDataQueryResponse["generalSettings"] = {
     title: "",

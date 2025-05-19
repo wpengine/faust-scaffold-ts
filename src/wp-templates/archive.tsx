@@ -110,7 +110,8 @@ const ArchivePage: FaustTemplate<GetArchiveQuery> = (props) => {
   });
 
   const siteDataQuery = useFaustQuery<SiteDataQueryResponse>(SITE_DATA_QUERY);
-  const headerMenuDataQuery = useFaustQuery<HeaderMenuQueryResponse>(HEADER_MENU_QUERY);
+  const headerMenuDataQuery =
+    useFaustQuery<HeaderMenuQueryResponse>(HEADER_MENU_QUERY);
 
   if (loading && !data)
     return (
@@ -150,7 +151,7 @@ const ArchivePage: FaustTemplate<GetArchiveQuery> = (props) => {
       variables: {
         first: BATCH_SIZE,
         after: posts.pageInfo.endCursor,
-        uri: currentUri
+        uri: currentUri,
       },
       updateQuery: (prevResult, { fetchMoreResult }) => {
         if (!fetchMoreResult) return prevResult;
@@ -175,10 +176,7 @@ const ArchivePage: FaustTemplate<GetArchiveQuery> = (props) => {
               ...nextNode,
               posts: {
                 ...nextNode.posts,
-                nodes: [
-                  ...prevNode.posts.nodes,
-                  ...nextNode.posts.nodes,
-                ],
+                nodes: [...prevNode.posts.nodes, ...nextNode.posts.nodes],
               },
             },
           };
@@ -201,10 +199,7 @@ const ArchivePage: FaustTemplate<GetArchiveQuery> = (props) => {
               ...nextNode,
               posts: {
                 ...nextNode.posts,
-                nodes: [
-                  ...prevNode.posts.nodes,
-                  ...nextNode.posts.nodes,
-                ],
+                nodes: [...prevNode.posts.nodes, ...nextNode.posts.nodes],
               },
             },
           };
@@ -234,7 +229,10 @@ const ArchivePage: FaustTemplate<GetArchiveQuery> = (props) => {
         <div className="space-y-12">
           {posts && posts.nodes && posts.nodes.length > 0 ? (
             posts.nodes.map((post) => (
-              <PostListItem key={(post as any).id || (post as any).uri} post={post} />
+              <PostListItem
+                key={(post as any).id || (post as any).uri}
+                post={post}
+              />
             ))
           ) : (
             <p>No posts found.</p>

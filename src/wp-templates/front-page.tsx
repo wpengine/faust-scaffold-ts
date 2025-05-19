@@ -18,7 +18,8 @@ import { FaustTemplate } from "@faustwp/core";
 
 const Component: FaustTemplate<GetPageQuery> = (props) => {
   const siteDataQuery = useFaustQuery<SiteDataQueryResponse>(SITE_DATA_QUERY);
-  const headerMenuDataQuery = useFaustQuery<HeaderMenuQueryResponse>(HEADER_MENU_QUERY);
+  const headerMenuDataQuery =
+    useFaustQuery<HeaderMenuQueryResponse>(HEADER_MENU_QUERY);
 
   const defaultSiteData: SiteDataQueryResponse["generalSettings"] = {
     title: "",
@@ -28,7 +29,8 @@ const Component: FaustTemplate<GetPageQuery> = (props) => {
     [];
 
   const siteData = siteDataQuery?.generalSettings || defaultSiteData;
-  const menuItems = headerMenuDataQuery?.primaryMenuItems?.nodes || defaultMenuItems;
+  const menuItems =
+    headerMenuDataQuery?.primaryMenuItems?.nodes || defaultMenuItems;
   const { title: siteTitle, description: siteDescription } = siteData;
 
   return (
