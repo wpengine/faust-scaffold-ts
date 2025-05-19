@@ -3,20 +3,26 @@ import Head from "next/head";
 import EntryHeader from "../components/entry-header";
 import Footer from "../components/footer";
 import Header from "../components/header";
-import { SITE_DATA_QUERY } from "../queries/SiteSettingsQuery";
-import { HEADER_MENU_QUERY } from "../queries/MenuQueries";
+import {
+  SITE_DATA_QUERY,
+  SiteDataQueryResponse,
+} from "../queries/SiteSettingsQuery";
+import {
+  HEADER_MENU_QUERY,
+  HeaderMenuQueryResponse,
+} from "../queries/MenuQueries";
 import { useFaustQuery } from "@faustwp/core";
 import { GetPageQuery } from "../__generated__/graphql";
 import { FaustTemplate } from "@faustwp/core";
 
-const PAGE_QUERY = gql`
+const PAGE_QUERY = gql(`
   query GetPage($databaseId: ID!, $asPreview: Boolean = false) {
     page(id: $databaseId, idType: DATABASE_ID, asPreview: $asPreview) {
       title
       content
     }
   }
-`;
+`);
 
 const Component: FaustTemplate<GetPageQuery> = (props) => {
   // Loading state for previews
@@ -24,14 +30,20 @@ const Component: FaustTemplate<GetPageQuery> = (props) => {
     return <>Loading...</>;
   }
 
-  const contentQuery = useFaustQuery(PAGE_QUERY) || {};
-  const siteDataQuery = useFaustQuery(SITE_DATA_QUERY) || {};
-  const headerMenuDataQuery = useFaustQuery(HEADER_MENU_QUERY) || {};
+  const contentQuery = useFaustQuery<GetPageQuery>(PAGE_QUERY) || {};
+  const siteDataQuery = useFaustQuery<SiteDataQueryResponse>(SITE_DATA_QUERY);
+  const headerMenuDataQuery = useFaustQuery<HeaderMenuQueryResponse>(HEADER_MENU_QUERY);
 
-  const siteData = siteDataQuery?.generalSettings || {};
-  const menuItems = headerMenuDataQuery?.primaryMenuItems?.nodes || {
-    nodes: [],
+  const defaultSiteData: SiteDataQueryResponse["generalSettings"] = {
+    title: "",
+    description: "",
   };
+  const defaultMenuItems: HeaderMenuQueryResponse["primaryMenuItems"]["nodes"] =
+    [];
+
+  const siteData = siteDataQuery?.generalSettings || defaultSiteData;
+  const menuItems =
+    headerMenuDataQuery?.primaryMenuItems?.nodes || defaultMenuItems;
   const { title: siteTitle, description: siteDescription } = siteData;
   const { title, content } = contentQuery?.page || {};
 

@@ -1,10 +1,21 @@
-import { gql, useQuery } from "@apollo/client";
+import {
+  gql,
+  useQuery,
+  ApolloQueryResult,
+  OperationVariables,
+} from "@apollo/client";
 import Head from "next/head";
 import Header from "../components/header";
 import EntryHeader from "../components/entry-header";
 import Footer from "../components/footer";
-import { SITE_DATA_QUERY } from "../queries/SiteSettingsQuery";
-import { HEADER_MENU_QUERY } from "../queries/MenuQueries";
+import {
+  SITE_DATA_QUERY,
+  SiteDataQueryResponse,
+} from "../queries/SiteSettingsQuery";
+import {
+  HEADER_MENU_QUERY,
+  HeaderMenuQueryResponse,
+} from "../queries/MenuQueries";
 import { POST_LIST_FRAGMENT } from "../fragments/PostListFragment";
 import PostListItem from "../components/post-list-item";
 import { useFaustQuery, getNextStaticProps } from "@faustwp/core";
@@ -13,6 +24,7 @@ import { useRouter } from "next/router";
 import styles from "../styles/archive.module.css";
 import { GetArchiveQuery } from "../__generated__/graphql";
 import { FaustTemplate } from "@faustwp/core";
+import { GetStaticPropsContext } from "next";
 
 // Change to how many posts you want to load at once
 const BATCH_SIZE = 5;
@@ -50,9 +62,34 @@ const ARCHIVE_QUERY = gql`
   }
 `;
 
+interface LoadMoreButtonProps {
+  onClick: () => Promise<void>;
+}
+
+const LoadMoreButton: React.FC<LoadMoreButtonProps> = ({ onClick }) => {
+  const [loading, setLoading] = useState<boolean>(false);
+
+  const handleLoadMore = async (): Promise<void> => {
+    setLoading(true);
+    await onClick();
+    setLoading(false);
+  };
+
+  return (
+    <button
+      type="button"
+      className={styles.loadMoreButton}
+      onClick={handleLoadMore}
+      disabled={loading}
+    >
+      {loading ? <>Loading...</> : <>Load more</>}
+    </button>
+  );
+};
+
 const ArchivePage: FaustTemplate<GetArchiveQuery> = (props) => {
   const router = useRouter();
-  const [currentUri, setCurrentUri] = useState("");
+  const [currentUri, setCurrentUri] = useState<string>("");
 
   useEffect(() => {
     if (router.asPath) {
@@ -66,14 +103,14 @@ const ArchivePage: FaustTemplate<GetArchiveQuery> = (props) => {
     loading = true,
     error,
     fetchMore,
-  } = useQuery(ARCHIVE_QUERY, {
+  } = useQuery<GetArchiveQuery>(ARCHIVE_QUERY, {
     variables: { first: BATCH_SIZE, after: null, uri: currentUri },
     notifyOnNetworkStatusChange: true,
     fetchPolicy: "cache-and-network",
   });
 
-  const siteDataQuery = useFaustQuery(SITE_DATA_QUERY) || {};
-  const headerMenuDataQuery = useFaustQuery(HEADER_MENU_QUERY);
+  const siteDataQuery = useFaustQuery<SiteDataQueryResponse>(SITE_DATA_QUERY);
+  const headerMenuDataQuery = useFaustQuery<HeaderMenuQueryResponse>(HEADER_MENU_QUERY);
 
   if (loading && !data)
     return (
@@ -82,39 +119,99 @@ const ArchivePage: FaustTemplate<GetArchiveQuery> = (props) => {
 
   if (error) return <p>Error! {error.message}</p>;
 
-  if (!data?.nodeByUri?.posts?.nodes.length) {
+  if (
+    !(
+      data?.nodeByUri &&
+      (data.nodeByUri.__typename === "Category" ||
+        data.nodeByUri.__typename === "Tag") &&
+      data.nodeByUri.posts &&
+      data.nodeByUri.posts.nodes.length
+    )
+  ) {
     return <p>No posts have been published</p>;
   }
 
-  const siteData = siteDataQuery?.generalSettings || {};
-  const menuItems = headerMenuDataQuery?.primaryMenuItems?.nodes || {
-    nodes: [],
+  const defaultSiteData: SiteDataQueryResponse["generalSettings"] = {
+    title: "",
+    description: "",
   };
+  const defaultMenuItems: HeaderMenuQueryResponse["primaryMenuItems"]["nodes"] =
+    [];
+
+  const siteData = siteDataQuery?.generalSettings || defaultSiteData;
+  const menuItems =
+    headerMenuDataQuery?.primaryMenuItems?.nodes || defaultMenuItems;
+
   const { title: siteTitle, description: siteDescription } = siteData;
   const { archiveType, name, posts } = data?.nodeByUri || {};
 
-  const loadMorePosts = async () => {
+  const loadMorePosts = async (): Promise<void> => {
     await fetchMore({
       variables: {
         first: BATCH_SIZE,
         after: posts.pageInfo.endCursor,
-        uri: currentUri, // Use the dynamic URI
+        uri: currentUri
       },
       updateQuery: (prevResult, { fetchMoreResult }) => {
         if (!fetchMoreResult) return prevResult;
 
-        return {
-          nodeByUri: {
-            ...fetchMoreResult.nodeByUri,
-            posts: {
-              ...fetchMoreResult.nodeByUri.posts,
-              nodes: [
-                ...prevResult.nodeByUri.posts.nodes,
-                ...fetchMoreResult.nodeByUri.posts.nodes,
-              ],
+        const prevNode = prevResult.nodeByUri;
+        const nextNode = fetchMoreResult.nodeByUri;
+
+        // Only merge if both are Category with CategoryToPostConnection
+        if (
+          prevNode &&
+          nextNode &&
+          prevNode.__typename === "Category" &&
+          nextNode.__typename === "Category" &&
+          prevNode.posts &&
+          nextNode.posts &&
+          prevNode.posts.__typename === "CategoryToPostConnection" &&
+          nextNode.posts.__typename === "CategoryToPostConnection"
+        ) {
+          return {
+            ...prevResult,
+            nodeByUri: {
+              ...nextNode,
+              posts: {
+                ...nextNode.posts,
+                nodes: [
+                  ...prevNode.posts.nodes,
+                  ...nextNode.posts.nodes,
+                ],
+              },
             },
-          },
-        };
+          };
+        }
+
+        // Only merge if both are Tag with TagToPostConnection
+        if (
+          prevNode &&
+          nextNode &&
+          prevNode.__typename === "Tag" &&
+          nextNode.__typename === "Tag" &&
+          prevNode.posts &&
+          nextNode.posts &&
+          prevNode.posts.__typename === "TagToPostConnection" &&
+          nextNode.posts.__typename === "TagToPostConnection"
+        ) {
+          return {
+            ...prevResult,
+            nodeByUri: {
+              ...nextNode,
+              posts: {
+                ...nextNode.posts,
+                nodes: [
+                  ...prevNode.posts.nodes,
+                  ...nextNode.posts.nodes,
+                ],
+              },
+            },
+          };
+        }
+
+        // fallback: just return the new result
+        return fetchMoreResult;
       },
     });
   };
@@ -137,7 +234,7 @@ const ArchivePage: FaustTemplate<GetArchiveQuery> = (props) => {
         <div className="space-y-12">
           {posts && posts.nodes && posts.nodes.length > 0 ? (
             posts.nodes.map((post) => (
-              <PostListItem key={post.id} post={post} />
+              <PostListItem key={(post as any).id || (post as any).uri} post={post} />
             ))
           ) : (
             <p>No posts found.</p>
@@ -153,40 +250,19 @@ const ArchivePage: FaustTemplate<GetArchiveQuery> = (props) => {
       <Footer />
     </>
   );
-}
+};
 
-export async function getStaticProps(context) {
+export async function getStaticProps(context: GetStaticPropsContext) {
   return getNextStaticProps(context, {
-    Page: ArchivePage,
+    Page: ArchivePage as any,
     revalidate: 60,
   });
 }
 
-const LoadMoreButton = ({ onClick }) => {
-  const [loading, setLoading] = useState(false);
-
-  const handleLoadMore = async () => {
-    setLoading(true);
-    await onClick();
-    setLoading(false);
-  };
-
-  return (
-    <button
-      type="button"
-      className={styles.loadMoreButton}
-      onClick={handleLoadMore}
-      disabled={loading}
-    >
-      {loading ? <>Loading...</> : <>Load more</>}
-    </button>
-  );
-};
-
 ArchivePage.queries = [
   {
     query: ARCHIVE_QUERY,
-    variables: ({ uri }) => ({
+    variables: ({ uri }: { uri: string }) => ({
       uri,
       first: BATCH_SIZE,
       after: null,
@@ -199,6 +275,5 @@ ArchivePage.queries = [
     query: HEADER_MENU_QUERY,
   },
 ];
-
 
 export default ArchivePage;
