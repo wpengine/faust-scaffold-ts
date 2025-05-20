@@ -109,7 +109,7 @@ const Component: FaustTemplate<GetPageQuery> = (props) => {
             </Link>
           </p>
 
-          <h1>Our Community 🩵</h1>
+          <h2>Our Community 🩵</h2>
           <p>
             At WP Engine, we have a strong community built around headless
             WordPress to support you with your journey.
@@ -229,7 +229,7 @@ const Component: FaustTemplate<GetPageQuery> = (props) => {
             </li>
           </ul>
 
-          <h1>Documentation 🔎</h1>
+          <h2>Documentation 🔎</h2>
           <ul>
             <li>
               <Link

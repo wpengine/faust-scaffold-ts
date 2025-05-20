@@ -20,7 +20,6 @@ import { POST_LIST_FRAGMENT } from "../fragments/PostListFragment";
 import PostListItem from "../components/post-list-item";
 import { useFaustQuery, getNextStaticProps } from "@faustwp/core";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/router";
 import styles from "../styles/archive.module.css";
 import { GetArchiveQuery } from "../__generated__/graphql";
 import { FaustTemplate } from "@faustwp/core";
@@ -88,16 +87,8 @@ const LoadMoreButton: React.FC<LoadMoreButtonProps> = ({ onClick }) => {
 };
 
 const ArchivePage: FaustTemplate<GetArchiveQuery> = (props) => {
-  const router = useRouter();
-  const [currentUri, setCurrentUri] = useState<string>("");
 
-  useEffect(() => {
-    if (router.asPath) {
-      const path = router.asPath.split("?")[0];
-      setCurrentUri(path);
-    }
-  }, [router.asPath]);
-
+  const currentUri = props.__SEED_NODE__.uri;
   const {
     data,
     loading = true,
@@ -159,7 +150,6 @@ const ArchivePage: FaustTemplate<GetArchiveQuery> = (props) => {
         const prevNode = prevResult.nodeByUri;
         const nextNode = fetchMoreResult.nodeByUri;
 
-        // Only merge if both are Category with CategoryToPostConnection
         if (
           prevNode &&
           nextNode &&
@@ -182,7 +172,6 @@ const ArchivePage: FaustTemplate<GetArchiveQuery> = (props) => {
           };
         }
 
-        // Only merge if both are Tag with TagToPostConnection
         if (
           prevNode &&
           nextNode &&
@@ -205,7 +194,6 @@ const ArchivePage: FaustTemplate<GetArchiveQuery> = (props) => {
           };
         }
 
-        // fallback: just return the new result
         return fetchMoreResult;
       },
     });
