@@ -1,9 +1,4 @@
-import {
-  gql,
-  useQuery,
-  ApolloQueryResult,
-  OperationVariables,
-} from "@apollo/client";
+import { gql, useQuery } from "@apollo/client";
 import Head from "next/head";
 import Header from "../components/header";
 import EntryHeader from "../components/entry-header";
@@ -18,8 +13,8 @@ import {
 } from "../queries/MenuQueries";
 import { POST_LIST_FRAGMENT } from "../fragments/PostListFragment";
 import PostListItem from "../components/post-list-item";
-import { useFaustQuery, getNextStaticProps } from "@faustwp/core";
-import { useState, useEffect } from "react";
+import { getNextStaticProps } from "@faustwp/core";
+import { useState } from "react";
 import styles from "../styles/archive.module.css";
 import { GetArchiveQuery } from "../__generated__/graphql";
 import { FaustTemplate } from "@faustwp/core";
@@ -87,7 +82,6 @@ const LoadMoreButton: React.FC<LoadMoreButtonProps> = ({ onClick }) => {
 };
 
 const ArchivePage: FaustTemplate<GetArchiveQuery> = (props) => {
-
   const currentUri = props.__SEED_NODE__.uri;
   const {
     data,
@@ -100,9 +94,9 @@ const ArchivePage: FaustTemplate<GetArchiveQuery> = (props) => {
     fetchPolicy: "cache-and-network",
   });
 
-  const siteDataQuery = useFaustQuery<SiteDataQueryResponse>(SITE_DATA_QUERY);
+  const siteDataQuery = useQuery<SiteDataQueryResponse>(SITE_DATA_QUERY);
   const headerMenuDataQuery =
-    useFaustQuery<HeaderMenuQueryResponse>(HEADER_MENU_QUERY);
+    useQuery<HeaderMenuQueryResponse>(HEADER_MENU_QUERY);
 
   if (loading && !data)
     return (
@@ -130,9 +124,9 @@ const ArchivePage: FaustTemplate<GetArchiveQuery> = (props) => {
   const defaultMenuItems: HeaderMenuQueryResponse["primaryMenuItems"]["nodes"] =
     [];
 
-  const siteData = siteDataQuery?.generalSettings || defaultSiteData;
+  const siteData = siteDataQuery?.data?.generalSettings || defaultSiteData;
   const menuItems =
-    headerMenuDataQuery?.primaryMenuItems?.nodes || defaultMenuItems;
+    headerMenuDataQuery?.data?.primaryMenuItems?.nodes || defaultMenuItems;
 
   const { title: siteTitle, description: siteDescription } = siteData;
   const { archiveType, name, posts } = data?.nodeByUri || {};

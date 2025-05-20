@@ -12,14 +12,16 @@ import {
   HEADER_MENU_QUERY,
   HeaderMenuQueryResponse,
 } from "../queries/MenuQueries";
-import { useFaustQuery } from "@faustwp/core";
 import { GetPageQuery } from "../__generated__/graphql";
 import { FaustTemplate } from "@faustwp/core";
+import { getNextStaticProps } from "@faustwp/core";
+import { GetStaticPropsContext } from "next";
+import { useQuery } from "@apollo/client";
 
-const Component: FaustTemplate<GetPageQuery> = (props) => {
-  const siteDataQuery = useFaustQuery<SiteDataQueryResponse>(SITE_DATA_QUERY);
+const FrontPage: FaustTemplate<GetPageQuery> = (props) => {
+  const siteDataQuery = useQuery<SiteDataQueryResponse>(SITE_DATA_QUERY);
   const headerMenuDataQuery =
-    useFaustQuery<HeaderMenuQueryResponse>(HEADER_MENU_QUERY);
+    useQuery<HeaderMenuQueryResponse>(HEADER_MENU_QUERY);
 
   const defaultSiteData: SiteDataQueryResponse["generalSettings"] = {
     title: "",
@@ -28,9 +30,9 @@ const Component: FaustTemplate<GetPageQuery> = (props) => {
   const defaultMenuItems: HeaderMenuQueryResponse["primaryMenuItems"]["nodes"] =
     [];
 
-  const siteData = siteDataQuery?.generalSettings || defaultSiteData;
+  const siteData = siteDataQuery?.data?.generalSettings || defaultSiteData;
   const menuItems =
-    headerMenuDataQuery?.primaryMenuItems?.nodes || defaultMenuItems;
+    headerMenuDataQuery?.data?.primaryMenuItems?.nodes || defaultMenuItems;
   const { title: siteTitle, description: siteDescription } = siteData;
 
   return (
@@ -267,7 +269,14 @@ const Component: FaustTemplate<GetPageQuery> = (props) => {
   );
 };
 
-Component.queries = [
+export async function getStaticProps(context: GetStaticPropsContext) {
+  return getNextStaticProps(context, {
+    Page: FrontPage as any,
+    revalidate: 60,
+  });
+}
+
+FrontPage.queries = [
   {
     query: SITE_DATA_QUERY,
   },
@@ -276,4 +285,4 @@ Component.queries = [
   },
 ];
 
-export default Component;
+export default FrontPage;
