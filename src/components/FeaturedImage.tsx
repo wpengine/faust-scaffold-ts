@@ -6,14 +6,14 @@ import { Post } from "../__generated__/graphql";
 interface FeaturedImageProps {
   post: Partial<Post>;
   classNames?: string;
-  uri?: string | boolean;
+  uri?: string | null;
   title?: string;
 }
 
 export function FeaturedImage({
   post,
   classNames = "h-48 my-9 relative",
-  uri = false,
+  uri = null,
   title = "",
 }: FeaturedImageProps) {
   if (!post.featuredImage?.node?.sourceUrl) {

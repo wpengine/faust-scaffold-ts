@@ -2,11 +2,11 @@
 
 This repository contains a starter kit to get you up and running quickly on [WP Engine's Headless Platform](https://wpengine.com/headless-wordpress/) with a WordPress site skeleton for more advanced developers.
 
-# Getting Started 🚀
+## For more information
 
 To get started on WP Engine's Platform please follow the docs here [https://developers.wpengine.com/docs/atlas/getting-started/create-app/](https://developers.wpengine.com/docs/atlas/getting-started/create-app/)
 
-# Project Structure
+## Project Structure
 
 ```
 ├── src/
@@ -54,7 +54,7 @@ To get started on WP Engine's Platform please follow the docs here [https://deve
 
 </details>
 
-# Our Community 🩵
+## Our Community 🩵
 
 At WP Engine, we have a strong community built around headless WordPress to support you with your journey.
 
@@ -74,7 +74,7 @@ At WP Engine, we have a strong community built around headless WordPress to supp
 - [WPGraphQL IDE](https://github.com/wp-graphql/wpgraphql-ide)
 - [WP GraphQL ACF](https://github.com/wp-graphql/wp-graphql-acf)
 
-# Documentation 🔎
+## Documentation 🔎
 
 > [!NOTE]
 > We are continuously adding new docs for [Faustjs.org](https://faustjs.org/docs)
@@ -83,9 +83,9 @@ At WP Engine, we have a strong community built around headless WordPress to supp
 - [Headless Platform Documentation](https://wpengine.com/headless-wordpress/)
 - [WPGraphQL Documentation](https://developers.wpengine.com/docs/atlas/overview/)
 
-# Contributions
+## Contributions
 
-# Contributor License Agreement
+## Contributor License Agreement
 
 All external contributors to WP Engine products must have a signed Contributor License Agreement (CLA) in place before the contribution may be accepted into any WP Engine codebase.
 
