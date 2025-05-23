@@ -1,10 +1,34 @@
 import { gql } from "../__generated__";
 import Head from "next/head";
-import EntryHeader from "../components/entry-header";
-import Footer from "../components/footer";
-import Header from "../components/header";
+import EntryHeader from "../components/EntryHeader";
+import Footer from "../components/Footer";
+import Header from "../components/Header";
+import {
+  SITE_DATA_QUERY,
+  SiteDataQueryResponse,
+} from "../queries/SiteSettingsQuery";
+import {
+  HEADER_MENU_QUERY,
+  HeaderMenuQueryResponse,
+} from "../queries/MenuQueries";
+import { useFaustQuery } from "@faustwp/core";
 import { GetPostQuery } from "../__generated__/graphql";
 import { FaustTemplate } from "@faustwp/core";
+
+const POST_QUERY = gql(`
+  query GetPost($databaseId: ID!, $asPreview: Boolean = false) {
+    post(id: $databaseId, idType: DATABASE_ID, asPreview: $asPreview) {
+      title
+      content
+      date
+      author {
+        node {
+          name
+        }
+      }
+    }
+  }
+`);
 
 const Component: FaustTemplate<GetPostQuery> = (props) => {
   // Loading state for previews
@@ -12,10 +36,23 @@ const Component: FaustTemplate<GetPostQuery> = (props) => {
     return <>Loading...</>;
   }
 
-  const { post, generalSettings, primaryMenuItems } = props.data;
-  const { title: siteTitle, description: siteDescription } = generalSettings;
-  const { nodes: menuItems } = primaryMenuItems;
-  const { title, content, date, author } = post;
+  const contentQuery = useFaustQuery<GetPostQuery>(POST_QUERY) || {};
+  const siteDataQuery = useFaustQuery<SiteDataQueryResponse>(SITE_DATA_QUERY);
+  const headerMenuDataQuery =
+    useFaustQuery<HeaderMenuQueryResponse>(HEADER_MENU_QUERY);
+
+  const defaultSiteData: SiteDataQueryResponse["generalSettings"] = {
+    title: "",
+    description: "",
+  };
+  const defaultMenuItems: HeaderMenuQueryResponse["primaryMenuItems"]["nodes"] =
+    [];
+
+  const siteData = siteDataQuery?.generalSettings || defaultSiteData;
+  const menuItems =
+    headerMenuDataQuery?.primaryMenuItems?.nodes || defaultMenuItems;
+  const { title: siteTitle, description: siteDescription } = siteData;
+  const { title, content, date, author } = contentQuery?.post || {};
 
   return (
     <>
@@ -30,7 +67,7 @@ const Component: FaustTemplate<GetPostQuery> = (props) => {
       />
 
       <main className="container">
-        <EntryHeader title={title} date={date} author={author.node.name} />
+        <EntryHeader title={title} date={date} author={author?.node?.name} />
         <div dangerouslySetInnerHTML={{ __html: content }} />
       </main>
 
@@ -39,45 +76,20 @@ const Component: FaustTemplate<GetPostQuery> = (props) => {
   );
 };
 
-Component.variables = ({ databaseId }, ctx) => {
-  return {
-    databaseId,
-    asPreview: ctx?.asPreview,
-  };
-};
-
-Component.query = gql(`
-  query GetPost($databaseId: ID!, $asPreview: Boolean = false) {
-    post(id: $databaseId, idType: DATABASE_ID, asPreview: $asPreview) {
-      title
-      content
-      date
-      author {
-        node {
-          name
-        }
-      }
-    }
-    generalSettings {
-      title
-      description
-    }
-    primaryMenuItems: menuItems(where: { location: PRIMARY }) {
-      nodes {
-        id
-        uri
-        path
-        label
-        parentId
-        cssClasses
-        menu {
-          node {
-            name
-          }
-        }
-      }
-    }
-  }
-`);
+Component.queries = [
+  {
+    query: POST_QUERY,
+    variables: ({ databaseId }, ctx) => ({
+      databaseId,
+      asPreview: ctx?.asPreview,
+    }),
+  },
+  {
+    query: SITE_DATA_QUERY,
+  },
+  {
+    query: HEADER_MENU_QUERY,
+  },
+];
 
 export default Component;
