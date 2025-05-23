@@ -1,8 +1,8 @@
 import { gql, useQuery } from "@apollo/client";
 import Head from "next/head";
-import Header from "../components/header";
-import EntryHeader from "../components/entry-header";
-import Footer from "../components/footer";
+import Header from "../components/Header";
+import EntryHeader from "../components/EntryHeader";
+import Footer from "../components/Footer";
 import {
   SITE_DATA_QUERY,
   SiteDataQueryResponse,
@@ -12,7 +12,7 @@ import {
   HeaderMenuQueryResponse,
 } from "../queries/MenuQueries";
 import { POST_LIST_FRAGMENT } from "../fragments/PostListFragment";
-import PostListItem from "../components/post-list-item";
+import PostListItem from "../components/PostListItem";
 import { getNextStaticProps } from "@faustwp/core";
 import { useState } from "react";
 import styles from "../styles/archive.module.css";

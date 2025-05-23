@@ -1,8 +1,8 @@
 import { gql, useQuery } from "@apollo/client";
 import Head from "next/head";
-import EntryHeader from "../components/entry-header";
-import Footer from "../components/footer";
-import Header from "../components/header";
+import EntryHeader from "../components/EntryHeader";
+import Footer from "../components/Footer";
+import Header from "../components/Header";
 import {
   SITE_DATA_QUERY,
   SiteDataQueryResponse,
