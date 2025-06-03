@@ -1,6 +1,6 @@
 import { gql } from "../__generated__";
 import Link from "next/link";
-import style from "./header.module.css";
+import style from "../styles/header.module.css";
 import {
   HeaderGeneralSettingsFragmentFragment,
   PrimaryMenuItemFragmentFragment,
@@ -19,7 +19,7 @@ export default function Header({
 }: HeaderProps) {
   return (
     <header className={style.header}>
-      <div className="container">
+      <div className={`container ${style.container}`}>
         <Link href="/" className={style.brand}>
           <h2 className={style.siteTitle}>{siteTitle}</h2>
           <p className={style.siteDescription}>{siteDescription}</p>
@@ -27,7 +27,7 @@ export default function Header({
 
         <nav className={style.nav}>
           <ul>
-            {menuItems.map((item) => (
+            {(Array.isArray(menuItems) ? menuItems : []).map((item) => (
               <li key={item.id}>
                 <Link href={item.uri}>{item.label}</Link>
               </li>

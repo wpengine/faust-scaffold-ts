@@ -1,21 +1,75 @@
-import { gql } from "../__generated__";
+import { gql, useQuery } from "@apollo/client";
 import Head from "next/head";
-import EntryHeader from "../components/entry-header";
-import Footer from "../components/footer";
-import Header from "../components/header";
+import EntryHeader from "../components/EntryHeader";
+import Footer from "../components/Footer";
+import Header from "../components/Header";
+import {
+  SITE_DATA_QUERY,
+  SiteDataQueryResponse,
+} from "../queries/SiteSettingsQuery";
+import {
+  HEADER_MENU_QUERY,
+  HeaderMenuQueryResponse,
+} from "../queries/MenuQueries";
 import { GetPageQuery } from "../__generated__/graphql";
 import { FaustTemplate } from "@faustwp/core";
 
-const Component: FaustTemplate<GetPageQuery> = (props) => {
-  // Loading state for previews
+const PAGE_QUERY = gql(`
+  query GetPage($databaseId: ID!, $asPreview: Boolean = false) {
+    page(id: $databaseId, idType: DATABASE_ID, asPreview: $asPreview) {
+      title
+      content
+    }
+  }
+`);
+
+const SinglePage: FaustTemplate<GetPageQuery> = (props) => {
   if (props.loading) {
     return <>Loading...</>;
   }
 
-  const { title: siteTitle, description: siteDescription } =
-    props.data.generalSettings;
-  const menuItems = props.data.primaryMenuItems.nodes;
-  const { title, content } = props.data.page;
+  const databaseId = props.__SEED_NODE__.databaseId;
+
+  const {
+    data,
+    loading = true,
+    error,
+  } = useQuery<GetPageQuery>(PAGE_QUERY, {
+    variables: {
+      databaseId: databaseId,
+      asPreview: false,
+    },
+    notifyOnNetworkStatusChange: true,
+    fetchPolicy: "cache-and-network",
+  });
+
+  const siteDataQuery = useQuery<SiteDataQueryResponse>(SITE_DATA_QUERY);
+  const headerMenuDataQuery =
+    useQuery<HeaderMenuQueryResponse>(HEADER_MENU_QUERY);
+
+  if (loading && !data)
+    return (
+      <div className="container-main flex justify-center py-20">Loading...</div>
+    );
+
+  if (error) return <p>Error! {error.message}</p>;
+
+  if (!data?.page) {
+    return <p>No pages have been published</p>;
+  }
+
+  const defaultSiteData: SiteDataQueryResponse["generalSettings"] = {
+    title: "",
+    description: "",
+  };
+  const defaultMenuItems: HeaderMenuQueryResponse["primaryMenuItems"]["nodes"] =
+    [];
+
+  const siteData = siteDataQuery?.data?.generalSettings || defaultSiteData;
+  const menuItems =
+    headerMenuDataQuery?.data?.primaryMenuItems?.nodes || defaultMenuItems;
+  const { title: siteTitle, description: siteDescription } = siteData;
+  const { title, content } = data?.page || {};
 
   return (
     <>
@@ -39,39 +93,20 @@ const Component: FaustTemplate<GetPageQuery> = (props) => {
   );
 };
 
-Component.variables = ({ databaseId }, ctx) => {
-  return {
-    databaseId,
-    asPreview: ctx?.asPreview,
-  };
-};
+SinglePage.queries = [
+  {
+    query: PAGE_QUERY,
+    variables: ({ databaseId }, ctx) => ({
+      databaseId,
+      asPreview: ctx?.asPreview,
+    }),
+  },
+  {
+    query: SITE_DATA_QUERY,
+  },
+  {
+    query: HEADER_MENU_QUERY,
+  },
+];
 
-Component.query = gql(`
-  query GetPage($databaseId: ID!, $asPreview: Boolean = false) {
-    page(id: $databaseId, idType: DATABASE_ID, asPreview: $asPreview) {
-      title
-      content
-    }
-    generalSettings {
-      title
-      description
-    }
-    primaryMenuItems: menuItems(where: { location: PRIMARY }) {
-      nodes {
-        id
-        uri
-        path
-        label
-        parentId
-        cssClasses
-        menu {
-          node {
-            name
-          }
-        }
-      }
-    }
-  }
-`);
-
-export default Component;
+export default SinglePage;

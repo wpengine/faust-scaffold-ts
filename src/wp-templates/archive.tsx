@@ -1,24 +1,197 @@
-import { gql } from "../__generated__";
-import Link from "next/link";
+import { gql, useQuery } from "@apollo/client";
 import Head from "next/head";
-import Header from "../components/header";
-import EntryHeader from "../components/entry-header";
-import Footer from "../components/footer";
+import Header from "../components/Header";
+import EntryHeader from "../components/EntryHeader";
+import Footer from "../components/Footer";
+import {
+  SITE_DATA_QUERY,
+  SiteDataQueryResponse,
+} from "../queries/SiteSettingsQuery";
+import {
+  HEADER_MENU_QUERY,
+  HeaderMenuQueryResponse,
+} from "../queries/MenuQueries";
+import { POST_LIST_FRAGMENT } from "../fragments/PostListFragment";
+import PostListItem from "../components/PostListItem";
+import { getNextStaticProps } from "@faustwp/core";
+import { useState } from "react";
+import styles from "../styles/archive.module.css";
 import { GetArchiveQuery } from "../__generated__/graphql";
 import { FaustTemplate } from "@faustwp/core";
+import { GetStaticPropsContext } from "next";
 
-const Component: FaustTemplate<GetArchiveQuery> = (props) => {
-  const { title: siteTitle, description: siteDescription } =
-    props.data.generalSettings;
-  const menuItems = props.data.primaryMenuItems.nodes;
-  const { archiveType } = props.data.nodeByUri;
+// Change to how many posts you want to load at once
+const BATCH_SIZE = 5;
 
-  if (archiveType !== "Category" && archiveType !== "Tag") {
-    return <>Archive not found</>;
+const ARCHIVE_QUERY = gql`
+  ${POST_LIST_FRAGMENT}
+  query GetArchive($uri: String!, $first: Int!, $after: String) {
+    nodeByUri(uri: $uri) {
+      archiveType: __typename
+      ... on Category {
+        name
+        posts(first: $first, after: $after) {
+          pageInfo {
+            hasNextPage
+            endCursor
+          }
+          nodes {
+            ...PostListFragment
+          }
+        }
+      }
+      ... on Tag {
+        name
+        posts(first: $first, after: $after) {
+          pageInfo {
+            hasNextPage
+            endCursor
+          }
+          nodes {
+            ...PostListFragment
+          }
+        }
+      }
+    }
+  }
+`;
+
+interface LoadMoreButtonProps {
+  onClick: () => Promise<void>;
+}
+
+const LoadMoreButton: React.FC<LoadMoreButtonProps> = ({ onClick }) => {
+  const [loading, setLoading] = useState<boolean>(false);
+
+  const handleLoadMore = async (): Promise<void> => {
+    setLoading(true);
+    await onClick();
+    setLoading(false);
+  };
+
+  return (
+    <button
+      type="button"
+      className={styles.loadMoreButton}
+      onClick={handleLoadMore}
+      disabled={loading}
+    >
+      {loading ? <>Loading...</> : <>Load more</>}
+    </button>
+  );
+};
+
+const ArchivePage: FaustTemplate<GetArchiveQuery> = (props) => {
+  const currentUri = props.__SEED_NODE__.uri;
+  const {
+    data,
+    loading = true,
+    error,
+    fetchMore,
+  } = useQuery<GetArchiveQuery>(ARCHIVE_QUERY, {
+    variables: { first: BATCH_SIZE, after: null, uri: currentUri },
+    notifyOnNetworkStatusChange: true,
+    fetchPolicy: "cache-and-network",
+  });
+
+  const siteDataQuery = useQuery<SiteDataQueryResponse>(SITE_DATA_QUERY);
+  const headerMenuDataQuery =
+    useQuery<HeaderMenuQueryResponse>(HEADER_MENU_QUERY);
+
+  if (loading && !data)
+    return (
+      <div className="container-main flex justify-center py-20">Loading...</div>
+    );
+
+  if (error) return <p>Error! {error.message}</p>;
+
+  if (
+    !(
+      data?.nodeByUri &&
+      (data.nodeByUri.__typename === "Category" ||
+        data.nodeByUri.__typename === "Tag") &&
+      data.nodeByUri.posts &&
+      data.nodeByUri.posts.nodes.length
+    )
+  ) {
+    return <p>No posts have been published</p>;
   }
 
-  const { name, posts } = props.data.nodeByUri;
-  const htmlTitle = `${archiveType}: ${name} - ${siteTitle}`;
+  const defaultSiteData: SiteDataQueryResponse["generalSettings"] = {
+    title: "",
+    description: "",
+  };
+  const defaultMenuItems: HeaderMenuQueryResponse["primaryMenuItems"]["nodes"] =
+    [];
+
+  const siteData = siteDataQuery?.data?.generalSettings || defaultSiteData;
+  const menuItems =
+    headerMenuDataQuery?.data?.primaryMenuItems?.nodes || defaultMenuItems;
+
+  const { title: siteTitle, description: siteDescription } = siteData;
+  const { archiveType, name, posts } = data?.nodeByUri || {};
+
+  const loadMorePosts = async (): Promise<void> => {
+    await fetchMore({
+      variables: {
+        first: BATCH_SIZE,
+        after: posts.pageInfo.endCursor,
+        uri: currentUri,
+      },
+      updateQuery: (prevResult, { fetchMoreResult }) => {
+        if (!fetchMoreResult) return prevResult;
+
+        const prevNode = prevResult.nodeByUri;
+        const nextNode = fetchMoreResult.nodeByUri;
+
+        if (
+          prevNode &&
+          nextNode &&
+          prevNode.__typename === "Category" &&
+          nextNode.__typename === "Category" &&
+          prevNode.posts &&
+          nextNode.posts &&
+          prevNode.posts.__typename === "CategoryToPostConnection" &&
+          nextNode.posts.__typename === "CategoryToPostConnection"
+        ) {
+          return {
+            ...prevResult,
+            nodeByUri: {
+              ...nextNode,
+              posts: {
+                ...nextNode.posts,
+                nodes: [...prevNode.posts.nodes, ...nextNode.posts.nodes],
+              },
+            },
+          };
+        }
+
+        if (
+          prevNode &&
+          nextNode &&
+          prevNode.__typename === "Tag" &&
+          nextNode.__typename === "Tag" &&
+          prevNode.posts &&
+          nextNode.posts &&
+          prevNode.posts.__typename === "TagToPostConnection" &&
+          nextNode.posts.__typename === "TagToPostConnection"
+        ) {
+          return {
+            ...prevResult,
+            nodeByUri: {
+              ...nextNode,
+              posts: {
+                ...nextNode.posts,
+                nodes: [...prevNode.posts.nodes, ...nextNode.posts.nodes],
+              },
+            },
+          };
+        }
+
+        return fetchMoreResult;
+      },
+    });
+  };
 
   return (
     <>
@@ -32,17 +205,26 @@ const Component: FaustTemplate<GetArchiveQuery> = (props) => {
         menuItems={menuItems}
       />
 
-      <main className="container">
+      <main className="container mx-auto px-4">
         <EntryHeader title={`Archive for ${archiveType}: ${name}`} />
 
-        <h3>Recent Posts</h3>
-        <ul>
-          {posts.nodes.map((post) => (
-            <Link key={post.id} href={post.uri}>
-              <li>{post.title}</li>
-            </Link>
-          ))}
-        </ul>
+        <div className="space-y-12">
+          {posts && posts.nodes && posts.nodes.length > 0 ? (
+            posts.nodes.map((post) => (
+              <PostListItem
+                key={(post as any).id || (post as any).uri}
+                post={post}
+              />
+            ))
+          ) : (
+            <p>No posts found.</p>
+          )}
+          {posts.pageInfo.hasNextPage && (
+            <div className={styles.loadMoreButtonContainer}>
+              <LoadMoreButton onClick={loadMorePosts} />
+            </div>
+          )}
+        </div>
       </main>
 
       <Footer />
@@ -50,57 +232,28 @@ const Component: FaustTemplate<GetArchiveQuery> = (props) => {
   );
 };
 
-Component.variables = (seedQuery, ctx) => {
-  return {
-    uri: seedQuery.uri,
-  };
-};
+export async function getStaticProps(context: GetStaticPropsContext) {
+  return getNextStaticProps(context, {
+    Page: ArchivePage as any,
+    revalidate: 60,
+  });
+}
 
-Component.query = gql(`
-  query GetArchive($uri: String!) {
-    nodeByUri(uri: $uri) {
-      archiveType: __typename
-      ... on Category {
-        name
-        posts {
-          nodes {
-            id
-            title
-            uri
-          }
-        }
-      }
-      ... on Tag {
-        name
-        posts {
-          nodes {
-            id
-            title
-            uri
-          }
-        }
-      }
-    }
-    generalSettings {
-      title
-      description
-    }
-    primaryMenuItems: menuItems(where: { location: PRIMARY }) {
-      nodes {
-        id
-        uri
-        path
-        label
-        parentId
-        cssClasses
-        menu {
-          node {
-            name
-          }
-        }
-      }
-    }
-  }
-`);
+ArchivePage.queries = [
+  {
+    query: ARCHIVE_QUERY,
+    variables: ({ uri }: { uri: string }) => ({
+      uri,
+      first: BATCH_SIZE,
+      after: null,
+    }),
+  },
+  {
+    query: SITE_DATA_QUERY,
+  },
+  {
+    query: HEADER_MENU_QUERY,
+  },
+];
 
-export default Component;
+export default ArchivePage;
